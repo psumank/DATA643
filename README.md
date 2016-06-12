@@ -1,2 +1,2 @@
 # DATA643
-CUNY SPS DATA 643 - Special Topics in Data Analytics - Rec Sys
+CUNY SPS DATA 643 - Current Topics in Data Analytics - Rec Sys
