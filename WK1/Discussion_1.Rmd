@@ -1,0 +1,65 @@
+---
+title: "DATA 643 - Discussion_1"
+author: "Suman K Polavarapu"
+date: "June 12, 2016"
+output: html_document
+---
+
+# Week 1 Discussion - Scenario Design
+
+Your task for the first discussion is to analyze an existing recommender system that you find interesting.  You should:
+
+1. Perform a Scenario Design analysis as described below.  Consider whether it makes sense for your selected recommender system to perform scenario design twice, once for the organization (e.g. Amazon.com) and once for the organization's customers.
+2. Attempt to reverse engineer what you can about the site, from the site interface and any available information that you can find on the Internet or elsewhere.
+3. Include specific recommendations about how to improve the site's recommendation capabilities going forward.
+
+
+## 1. Scenario Design Analysis
+
+### 1.1 Identify a recommender system web site
+
+Google News -- uses recommender system to suggest the news articles for the reader. Google News is a computer-generated news site that aggregates news articles from more than 75,000 news sources worldwide, and groups the similar stories together and displays them according to reader's personalized interests.
+
+Here's an example of the section where the website is requesting to personalize by selecting a topic ( say, astronomy) and the the frequency scale ( 'Rarely', 'Occassionally', 'Sometimes', 'Often', 'Always'). 
+
+![Personalize](personalize.png)
+
+The web site also display the Top Stories on the left hand corner, followed by categroy sections such as World, U.S., Business etc. Each section contains the top 3 headlines from that category. 
+
+![Top Stories](TopStories.png)
+
+
+If you are a signed user then you can enjoy 2 additional features:
+
+(a) Google will record your search queries and clicks on news stories and make them accessible to you online. This allows
+you to easily browse stories you have read in the past.
+
+(b) Below the "Top Stories" section you will see a section labeled "Suggested for you" along with three stories that are recommended to you based on your past click history.
+
+
+### 1.2 Answer the three scenario design questions for this web site
+
+
+__Who are your target users?__
+
+The site's target users are the news readers (/subscribers) browsing the news articles. 
+
+
+__What are their key goals?__
+
+I was wondering, how google makes money from the google news, as i have NOT seen any ads on their news site. And google neither charges , nor pays money to the publishers either for the referral traffic. Then, how does it make money from its news portal ? , I finally came to know that the Googles key objective here is to funnel the readers over to the main Google search engine, where they do searches that do produce ads. And that's a nice business for them. So, we can think of Google News as a search referral machine !
+
+
+__How can you help them accomplish their goals?__
+
+By displaying the more relevant and personalized articles, google can get repeating readers and more subscribers to its news service. Users can share news articles via social media websites, which in turn generates more traffic to google.
+
+##2. Reverse Engineering of the site###
+
+Googles news appers to be presenting recommendations to signed users based on their click history, personalization and the click history of the community. For non-signed users , the website appears to be using the features like cookies, sessions etc. Based on the context information ( like user's location) , the website presents the 'News near you' section. "Most Popular" articles are displayed based on the overall number of clicks in the past 3 hours. Since the news articles are ephemeral in natures, google frequently refreshes the articles.
+
+
+
+##3. Recommendations for improving recommender capabilities
+
+Constantly optimizing the aggregator that pulls the personalized & localized news from a huge list of publishers would yield more and more happy readers. Sometimes it can be difficult for local sources to be heard , when a local story is picked up by national publishers.
