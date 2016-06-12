@@ -22,11 +22,11 @@ Google News -- uses recommender system to suggest the news articles for the read
 
 Here's an example of the section where the website is requesting to personalize by selecting a topic ( say, astronomy) and the the frequency scale ( 'Rarely', 'Occassionally', 'Sometimes', 'Often', 'Always'). 
 
-![Personalize](personalize.png)
+![Personalize](https://raw.githubusercontent.com/psumank/DATA643/master/WK1/personalize.PNG)
 
 The web site also display the Top Stories on the left hand corner, followed by categroy sections such as World, U.S., Business etc. Each section contains the top 3 headlines from that category. 
 
-![Top Stories](TopStories.png)
+![Top Stories](https://raw.githubusercontent.com/psumank/DATA643/master/WK1/TopStories.PNG)
 
 
 If you are a signed user then you can enjoy 2 additional features:
