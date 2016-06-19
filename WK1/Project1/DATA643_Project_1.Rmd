@@ -1,0 +1,196 @@
+---
+title: "DATA 643 - Project 1"
+author: "Suman K Polavarapu"
+date: "June 17, 2016"
+output: html_document
+---
+
+###Build a basic recommender system
+
+####Description
+
+This system recommends the tv shows to users.
+
+Source of the survey data is from: http://cs.mtu.edu/~lebrown/TechHacks-f13/rec-sys/data/cs1000_f13_data.csv
+
+
+####Load the data & Analyse
+
+Lets find the top 3 TV shows by mean rating.
+
+```{r, warning=FALSE}
+data <- read.csv("tv_ratings.csv")
+head(data)
+mns <- colMeans(data, na.rm = TRUE)
+colnames(data)[order(mns, decreasing = TRUE)[1:3]]
+```
+
+Let's look at the mean rating for each user and plot this as a histogram.
+
+```{r}
+rmns <- rowMeans(data, na.rm = TRUE)
+hist(rmns, breaks=15, main="Histogram of Mean User Ratings", xlab="Ratings", col= "light blue")
+```
+
+Mean ratings of each show.
+```{r}
+cmns <- colMeans(data, na.rm = TRUE)
+hist(cmns, breaks=15, main="Histogram of Mean TV Rating", xlab="Ratings", col= "light gray")
+```
+
+
+####Item Based Similarity
+
+Similarity of each tv show with the rest of the shows. We would need to compare each column in our data set with every other column in the data set. Basically, we will be comparing the 'Cosine Similarity' here:
+
+```{r}
+#cosine sim = crossprod(x, y)/ ( sqrt(crossprod(x,x)) * sqrt(crossprod(y,y)) )
+# In otherwords , its simply the (dotproduct of x,y) / (Magnitude of x * Magnitude of y)
+cosineSim <- function(x, y)
+{
+  return ( sum(x*y , na.rm = TRUE) / ( sqrt(sum(x*x , na.rm = TRUE)) * sqrt(sum(y*y, na.rm = TRUE)) )  )
+}
+```
+
+Now, lets prepare empty place holder to keep the cosine similarities, lising tv-show Vs tv-show.
+
+```{r}
+data.ibs.sim <- matrix(NA, nrow=ncol(data),ncol=ncol(data),dimnames=list(colnames(data),colnames(data)))
+
+#display just the first row.
+head(data.ibs.sim,1)
+```
+
+Now, lets fill in the matrix with cosine similarities
+
+```{r}
+#for each column in the data set
+for(i in 1:ncol(data)) {
+  #Loop thru the columns for each column
+  for (j in 1:ncol(data)){
+    #transforming the columns into matrices using as.matrix since 
+    #the matrix operations are     generally faster
+    data.ibs.sim[i,j] <- cosineSim(as.matrix(data[i]), as.matrix(data[j]))
+  }
+}
+
+#transform the matrix back to data frame.
+data.ibs.sim <- as.data.frame(data.ibs.sim)
+head(data.ibs.sim, 2)
+```
+
+Since we have got the similarity matrix, we can make some recommendations. Lets find the top 3 neighbours of each tv-show.
+
+Lets create a place holder again to keep the recommendations.
+```{r}
+data.neighbours <- matrix(NA, nrow = ncol(data.ibs.sim), ncol = 3, dimnames = list(colnames(data.ibs.sim)))
+data.neighbours
+```
+
+Find the neighbours for each column.
+
+```{r}
+for(i in 1:ncol(data))
+{
+  data.neighbours[i,]  <- (t(head(n=3,rownames(data.ibs.sim[order(data.ibs.sim[,i],decreasing=TRUE),][i]))))
+}
+data.neighbours
+```
+
+####User Based Similarity
+
+Lets try to normalize the ratings by subtracting from each rating the average rating of that user. This would turn low ratings into negative numbers and high ratings into positive numbers. We will then take the cosine distance. Uses with similar opinions about the show rated in common will have a relatively small angle between them.
+
+```{r, warning=FALSE}
+data.mat <- as.matrix(data)
+data.mat[is.na(data.mat)] <- 0
+row.means <- rowMeans(data.mat)
+#sweep the data - here 1 indicate row-wise
+data.mat.normal <- sweep(data.mat, 1, row.means, FUN="-", check.margin = FALSE)  
+```
+
+Prepare the similarity matrix using the cosine similarity between users
+```{r}
+#prepare place holder matrix to keep the ubs
+data.ubs.sim <- matrix(NA, nrow=nrow(data),ncol=nrow(data),dimnames=list(rownames(data),rownames(data)))
+
+#display just the first row.
+head(data.ubs.sim,1)
+
+#Now lets fill-in the place holder matrix.
+#for each row in the data set
+for(i in 1:nrow(data)) {
+  #Loop thru the rows for each row
+  for (j in 1:nrow(data)){
+    #transforming the rows into matrices using as.matrix since 
+    #the matrix operations are     generally faster
+    data.ubs.sim[i,j] <- cosineSim(as.matrix(data[i,]), as.matrix(data[j,]))
+  }
+}
+
+#transform the matrix back to data frame.
+data.ubs.sim <- as.data.frame(data.ubs.sim)
+head(data.ubs.sim, 2)
+
+```
+
+Lets look at the top 3 neighbours of the user 3:
+```{r}
+nd <- order(data.ubs.sim, decreasing = TRUE)
+
+head(order(data.ubs.sim[3,],decreasing=TRUE),4)[-1]
+
+#So users 11, 70, and 81 are similar to user 3.
+data[11,]
+data[70,]
+data[81,]
+
+data[3,]
+
+```
+
+
+###Analysis using R's recommenderlab package:
+
+```{r, warning=FALSE, message=FALSE}
+#install.packages('recommenderlab', dependencies=TRUE)
+library(recommenderlab)
+
+rating.matrix <- as.matrix(data)
+r1 <- as(rating.matrix, "realRatingMatrix")
+```
+
+```{r, fig.width=10}
+rn1 <- normalize(r1)
+image(r1, main="Ratings")
+image(rn1, main="Normalized Ratings")
+```
+
+
+### Recommendation System
+
+Recommend the shows for a given user using User Similarity [ Userbased Collaborative Filtering ]
+
+```{r}
+ubr <- Recommender(r1, method="UBCF") #Userbased Collaborative Filtering
+pred <- predict(ubr, r1, type="ratings")
+#as(pred, "matrix")
+```
+
+The supplied ratings for User 3 are:
+```{r}
+data[3,]
+```
+
+The predicted ratings for the missing shows are:
+```{r}
+colnames(data)[is.na(data[3,])]
+getRatings(pred[3,])
+```
+
+Present the top 3 predicted ratings for user 3
+```{r}
+pred <- predict(ubr, r1[3], n=3)
+as(pred, "list")
+```
+
