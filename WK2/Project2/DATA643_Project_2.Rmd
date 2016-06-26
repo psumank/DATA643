@@ -121,7 +121,7 @@ createModel <-function (movieRatingMat,method, param)
 }
 
 
-#UBCF, Cosing similarity
+#UBCF, Cosine similarity
 ubd.rec=createModel(train.RatingMat, method="UBCF", param=list(normalize = "Z-score",method="Cosine",nn=5, minRating=1))
 
 
