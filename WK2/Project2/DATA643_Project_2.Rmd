@@ -1,15 +1,16 @@
 ---
 title: "DATA 643 - Project 2"
 author: "Sreejaya Nair, Suman K Polavarapu"
-date: "June 17, 2016"
+date: "June 25, 2016"
 output: html_document
 ---
 
-###Build a basic recommender system
+###Build a basic recommender system with multiple recommender configurations
 
 ####Description
 
-This system recommends the movies to users using different recommendation algorithms. The data source is Movielens database.
+This system recommends  movies to users using different recommendation algorithms and evaluates those different approaches.
+The data source is Movielens database.
 
 ####Load the data & Analyse
 
@@ -26,7 +27,7 @@ library(ggplot2)
 
 __Data Acquisition & Clean up__
 
-*Load the data*
+*Load the required data - movies and ratings *
 ```{r}
 #Read the Movie data
 moviesurl <- getURL("https://raw.githubusercontent.com/srajeev1/MSDA-IS643/master/projects/project1/ml-latest-small/movies.csv")
