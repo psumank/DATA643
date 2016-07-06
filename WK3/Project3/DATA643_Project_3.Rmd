@@ -21,7 +21,7 @@ __Load the required libraries__
 ##If not found, install first.
 unavailable <- setdiff(c("recommenderlab", "reshape2","dplyr", "useful", "data.table", "proxy", "Matrix", "irlba" ), rownames(installed.packages()))
 if (length(unavailable)>0){
-  install.packages(setdiff(c("recommenderlab", "reshape2","dplyr", "useful", "data.table", "proxy", "Matrix", "irlba" ), rownames(installed.packages())))
+  install.packages(unavailable)
 }
 
 ##load the libraries
@@ -174,7 +174,7 @@ So, for content based recommendations, we do not need lot of user data, we can s
 
 ####Apply SVD to ratings matrix.
 
-Similary, another matrix factorization technique, SVD,  compresses the ratings matrix by considering the only high varying values. Lets review this:
+Similary, the matrix factorization technique, SVD,  compresses the ratings matrix by considering the only high varying values. Lets review this:
 
 ```{r, warning=FALSE, message=FALSE}
 #Try to apply the SVD on the initial ratings matrix and review the object sizes.
@@ -195,5 +195,42 @@ corner(v <- m.svd$v)
 
 #Notice the size difference between the original ratings matrix Vs the factored matrices !
 (object.size(m.matrix)- sum(object.size(m.svd$u), object.size(m.svd$d), object.size(m.svd$v) ))
-````
+```
+
+__Lets use the **recommenderlab** package to generate the SVD model__
+
+The description and default parameters of SVD method in **`recommenderlab`** are as follows:
+```{r, warning=FALSE, message=FALSE}
+recommenderRegistry$get_entry('SVD', dataType='realRatingMatrix')
+```
+
+Create the model using SVD method:
+```{r}
+ratings.ratingMatrix <- as(ratings, "realRatingMatrix")
+smp_size <- floor(0.75 * nrow(ratings.ratingMatrix))
+set.seed(123)
+train_ind <- sample(seq_len(nrow(ratings.ratingMatrix)), size = smp_size)
+
+train.RatingMat <- ratings.ratingMatrix[train_ind, ]
+test.RatingMat <- ratings.ratingMatrix[-train_ind, ]
+
+svd_rec <- Recommender(
+   data=train.RatingMat,
+   method='SVD',            
+   parameter=list(
+     categories=20,         # number of latent factors
+     normalize='center',    # normalizing by subtracting average rating per user;
+     method='Pearson'       # use Pearson correlation
+   ))
+
+svd_rec
+```
+
+```{r}
+#recommend few movies to user 1
+userID <- 1
+topN <- 3
+topN_recommendList <-predict(svd_rec,train.RatingMat[userID],n=topN) 
+corner(data.movies[topN_recommendList@items[[1]],],2,3)
+```
 
