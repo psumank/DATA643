@@ -1,0 +1,213 @@
+---
+title: "DATA 643 - Project 4"
+author: "Sreejaya Nair, Suman K Polavarapu"
+date: "July 13, 2016"
+output: html_document
+---
+
+###Description
+
+This assignment leverages the context pre filtering and makes it 2D and applies traditional recommender algorithms.
+
+```{r, warning=FALSE, message=FALSE}
+##Load libraries
+unavailable <- setdiff(c("recommenderlab", "xlsx", "RCurl", "reshape2","dplyr", "Matrix"), rownames(installed.packages()))
+if (length(unavailable)>0){
+  install.packages(unavailable)
+}
+
+library(recommenderlab)
+library(reshape2)
+library(RCurl)
+library(xlsx)
+library(dplyr)
+library(Matrix)
+```
+
+#### Common Functions
+
+__Function to binarize the given data set__
+
+```{r, warning=FALSE}
+#binarize.
+binarize <- function(df, ratingFieldName) {
+  df[[ratingFieldName]] <- as.numeric(as.character(df[[ratingFieldName]]))
+
+  #If the rating is >= 3, then we treat it as 1, else 0.
+  for (i in 1:nrow(df)){
+    if ( df[i,ratingFieldName] >= 3 ) {
+      df[i,ratingFieldName] <- 1
+    }
+    else{
+      df[i,ratingFieldName] <- 0
+    }
+  }
+  return (df)
+}
+```
+
+__Function to apply the context pre-filtering for a given data frame, contexts list, and exactMatch or Not__
+
+```{r, warning=FALSE}
+#Pre-Filtering - Prepare the predicates and Pre-Filter the contexts as per the match criteria.
+filterByContext <- function (df, contexts, exactMatch){
+  predicates <- sapply(contexts, function(context) {
+    name  <-  context[1]
+    value <-  context[2]
+    paste0(name,"=='",trimws(value) , "'")
+  })
+  
+  #Now combine ALL given predicates
+  if (exactMatch) {
+    predicates <- do.call(paste, c(as.list(predicates), sep=" & "))  
+  }
+  else {
+    predicates <- do.call(paste, c(as.list(predicates), sep=" | "))  
+  }
+  
+  #Print
+  print(predicates)
+  
+  #Filter Now.
+  ( df.filtered <- df %>% filter_( predicates) )
+}
+```
+
+__Function to prepare the real ratings matrix from the given sparse matrix__
+
+```{r, warning=FALSE}
+#Get real ratings matrix from the sparse matrix
+getRealRatingsMatrix <- function(sparseMatrix) {
+  
+  sparseMatrix<-as.matrix(sparseMatrix)
+  
+  #Lest check how sparse this matrix is.
+  sparseMatrixTemp <- sparseMatrix
+  is.na(sparseMatrixTemp) <- sparseMatrixTemp==0  
+  
+  print(paste0("Sparsity of the matrix:",      sum(is.na(sparseMatrixTemp))/(nrow(sparseMatrixTemp)*ncol(sparseMatrixTemp))))
+  
+  #Make it as real ratings matrix.
+  sparseMatrix.realRatings <- as(sapply(data.frame(sparseMatrix),as.numeric), "realRatingMatrix")
+  
+  return(sparseMatrix.realRatings)
+}
+```
+
+
+__Function to split the data frame into training and test__
+```{r, warning=FALSE}
+#Split the data frame int train and test.
+splitDF <- function(normRatingMat)
+{
+  ## 75% of the sample size
+  smp_size <- floor(0.75 * nrow(normRatingMat))
+  set.seed(123)
+  train_ind <- sample(seq_len(nrow(normRatingMat)), size = smp_size)
+  
+  train.RatingMat <- normRatingMat[train_ind, ]
+  test.RatingMat <- normRatingMat[-train_ind, ]
+  
+  
+  return(list(trainDF=train.RatingMat, testDF=test.RatingMat))
+}
+```
+
+
+__Function to create Model using Recommender class for a given ratings matrix and algorithm type__
+
+```{r, warning=FALSE}
+#Create the Model for the rating matrix and method.
+createModel <-function (ratingMat,algType)
+{
+  model <- Recommender(ratingMat, method = algType)
+  names(getModel(model))
+  getModel(model)$method
+  
+  getModel(model)$nn
+  
+  return (model)
+}
+```
+
+__Function to provide recommendations__
+
+```{r, warning=FALSE}
+#Provide the recommendations/predictions.
+recommendations <- function(ratingMat, model, userID, n)
+{
+  ### predict top n recommendations for given user
+  topN_recommendList <-predict(model,ratingMat[userID],n=n) 
+  topN_recommendList@items[[1]]
+  return(topN_recommendList)
+}
+```
+
+
+### Client code
+
+__Data Acquisition__
+```{r, warning=FALSE}
+#Data Acquisition
+download.file("http://github.com/psumank/DATA643/blob/master/WK4/Data/Data_TripAdvisor_v1.xls?raw=true", destfile = "Data_TripAdvisor_v1.xls", mode="wb")
+hotel.ranking.data.full <- read.xlsx2("Data_TripAdvisor_v1.xls", sheetName="Data")
+knitr::kable(hotel.ranking.data.full[10:20,])
+
+trip.type.data <- read.xlsx2("Data_TripAdvisor_v1.xls", sheetName="Trip Type")
+knitr::kable(trip.type.data)
+```
+
+
+####Data Preprocessing
+```{r, warning=FALSE}
+#binarize
+hotel.ranking.data <- binarize(hotel.ranking.data.full, "Rating")
+knitr::kable(hotel.ranking.data[10:20,])
+```
+
+__Context - *Trip Type* as 'Business' (which is '3'). and  *Hotel State* as 'Texas'__
+```{r, warning=FALSE}
+#Initialize the context.
+#Pre-filter contexts - sample context we are trying out is the Trip Type as 'Business' and hotel state is 'TX'
+contexts <- list(c('Trip.Type','3'), c('HOTEL_STATE','TX'))
+hotel.ranking.data.context <- filterByContext(hotel.ranking.data, contexts, TRUE)
+knitr::kable(hotel.ranking.data.context[10:20,])
+
+#Now convert into 2D and apply the traditional recommenders
+hotel.rating <- hotel.ranking.data.context %>% select(ID_USER, ID_HOTEL, Rating)
+hotel.rating.wide <-dcast(hotel.rating, ID_USER ~ ID_HOTEL, value.var='Rating', fun.aggregate= mean, na.rm=T)
+dim(hotel.rating.wide)
+
+#This is a highly sparse matrix, so, get the real ratings matrix
+hotel.realrating.matrix <- getRealRatingsMatrix(hotel.rating.wide)
+
+#Visualize it!
+image(hotel.realrating.matrix, main = "Heatmap of the rating matrix")
+  
+#Split Dataframe
+splitData <-splitDF(hotel.realrating.matrix)
+```
+
+__Prepare models and provide some recommendations__
+```{r, warning=FALSE}
+#Prepare models
+IBCF.model <- createModel(splitData$trainDF,"IBCF")
+UBCF.model <- createModel(splitData$trainDF,"UBCF")
+
+#Let us get the top 10 recommendations for user 45 for the given context.
+userID <- 45
+topN <- 10
+predict_list <-recommendations(splitData$trainDF, UBCF.model, userID, topN)
+hotel.ranking.data.context[predict_list@items[[1]],c("ID_HOTEL", "HOTEL_CITY", "HOTEL_STATE")]
+
+userID <- 45
+topN <- 10
+predict_list <-recommendations(splitData$trainDF, IBCF.model, userID, topN)
+hotel.ranking.data.context[predict_list@items[[1]], c("ID_HOTEL", "HOTEL_CITY", "HOTEL_STATE") ]
+```
+
+
+
+
+
+
